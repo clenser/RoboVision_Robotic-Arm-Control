@@ -31,5 +31,9 @@ In essence, our project epitomizes a harmonious fusion of advanced technologies,
 
 ![image](https://github.com/clenser/RoboVision/assets/100501976/223fa2b5-0a5c-435c-ab5a-4b4df539ea4c)
 
+![image](https://github.com/clenser/RoboVision/assets/100501976/09d9de1b-b6ec-4f21-b752-ba8554911529)
+
+![image](https://github.com/clenser/RoboVision/assets/100501976/8889709e-94f5-48b2-9e2b-4adf85c46dbb)
+
 
 
