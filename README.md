@@ -23,3 +23,13 @@ As users interact with the system, our software seamlessly transmits pertinent d
 Our system accommodates diverse video feed sources, with options ranging from integrated laptop webcams to external devices such as ESP32 camera modules or mobile devices. Seamless integration necessitates coexistence within the same network, ensuring efficient communication between the controller and video source.
 
 In essence, our project epitomizes a harmonious fusion of advanced technologies, fostering seamless interaction, robust security, and unparalleled versatility in industrial applications.
+
+![image](https://github.com/clenser/RoboVision/assets/100501976/30ff4759-483a-4c03-a0dc-e0dc4c35c9a4)
+
+
+![image](https://github.com/clenser/RoboVision/assets/100501976/1fb4cb3d-5092-4573-a187-ba358ec3b574)
+
+![image](https://github.com/clenser/RoboVision/assets/100501976/223fa2b5-0a5c-435c-ab5a-4b4df539ea4c)
+
+
+
