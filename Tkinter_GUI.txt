@@ -1,0 +1,171 @@
+import cv2
+import mediapipe as mp
+import math
+import pyfirmata2
+import numpy as np
+import tkinter as tk
+from PIL import Image, ImageTk
+
+# Predefined username and password
+USERNAME = "user"
+PASSWORD = "password"
+
+# Initialize Arduino and servo pins
+board = pyfirmata2.Arduino('COM5')
+servo_pin1 = board.get_pin('d:8:s')
+servo_pin2 = board.get_pin('d:7:s')
+
+servo_pin1.write(90)
+servo_pin2.write(90)
+
+
+# Function to calculate angle between three points
+def calculate_angle(a, b, c):
+    radians = math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(a[1] - b[1], a[0] - b[0])
+    angle = math.degrees(radians)
+    if angle < 0:
+        angle += 360
+    return angle
+
+
+# Function to update servo positions synchronously
+def update_servos(angle1, angle2):
+    if angle1 <= 180:
+        servo_pin1.write(angle1)
+    if angle2 <= 180:
+        servo_pin2.write(angle2)
+
+
+# Function for smooth interpolation
+def interpolate_smoothly(start_angle, end_angle, steps):
+    angles = np.linspace(start_angle, end_angle, steps)
+    smoothed_angles = np.sin(np.linspace(0, np.pi, steps)) * (end_angle - start_angle) / 2 + (
+                start_angle + end_angle) / 2
+    return smoothed_angles
+
+
+# Initialize MediaPipe Pose model
+mp_pose = mp.solutions.pose
+pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
+
+# Initialize video capture
+cap = cv2.VideoCapture(0)
+
+# Set window dimensions
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+
+# Initialize current servo positions
+current_servo1_position = 90  # Example initial position
+current_servo2_position = 90  # Example initial position
+
+
+# Function to update GUI with webcam feed and angles
+def update_gui(root, panel, angle1_label, angle2_label):
+    global current_servo1_position, current_servo2_position  # Declare global variables
+
+    ret, frame = cap.read()
+    if ret:
+        frame = cv2.flip(frame, 1)
+        frame = cv2.resize(frame, (WINDOW_WIDTH, WINDOW_HEIGHT))
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = pose.process(frame_rgb)
+        if results.pose_landmarks:
+            landmarks = results.pose_landmarks.landmark
+            left_shoulder = (int(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x * WINDOW_WIDTH),
+                             int(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y * WINDOW_HEIGHT))
+            left_hip = (int(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x * WINDOW_WIDTH),
+                        int(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y * WINDOW_HEIGHT))
+            left_elbow = (int(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x * WINDOW_WIDTH),
+                          int(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y * WINDOW_HEIGHT))
+            left_wrist = (int(landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x * WINDOW_WIDTH),
+                          int(landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y * WINDOW_HEIGHT))
+
+            servo1 = calculate_angle(left_hip, left_shoulder, left_elbow) - 356
+            servo1 = (servo1 * -1)
+            servo2 = calculate_angle(left_shoulder, left_elbow, left_wrist)
+
+            steps = 15
+            servo1_smoothed = interpolate_smoothly(current_servo1_position, servo1, steps)
+            servo2_smoothed = interpolate_smoothly(current_servo2_position, servo2, steps)
+
+            update_servos(servo1_smoothed[-1], servo2_smoothed[-1])
+
+            current_servo1_position = servo1_smoothed[-1]
+            current_servo2_position = servo2_smoothed[-1]
+
+            cv2.line(frame, left_shoulder, left_hip, (0, 255, 0), 3)
+            cv2.line(frame, left_shoulder, left_elbow, (0, 255, 0), 3)
+            cv2.line(frame, left_elbow, left_wrist, (0, 255, 0), 3)
+
+            cv2.circle(frame, left_shoulder, 5, (0, 0, 255), -1)
+            cv2.circle(frame, left_hip, 5, (0, 0, 255), -1)
+            cv2.circle(frame, left_elbow, 5, (0, 0, 255), -1)
+            cv2.circle(frame, left_wrist, 5, (0, 0, 255), -1)
+
+            angle1_label.config(text=f"Angle 1: {servo1:.2f} degrees")
+            angle2_label.config(text=f"Angle 2: {servo2:.2f} degrees")
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        img = Image.fromarray(frame)
+        imgtk = ImageTk.PhotoImage(image=img)
+        panel.imgtk = imgtk
+        panel.config(image=imgtk)
+        panel.after(10, lambda: update_gui(root, panel, angle1_label, angle2_label))
+
+
+# Function to handle login
+def login():
+    username = username_entry.get()
+    password = password_entry.get()
+    if username == USERNAME and password == PASSWORD:
+        login_window.destroy()
+        root = tk.Tk()  # Create the main tkinter window after successful login
+        root.title("Pose Detection")
+        root.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+
+        # Create a panel to display the webcam feed
+        panel = tk.Label(root)
+        panel.pack(padx=10, pady=10)
+
+        # Create labels to display angles
+        angle1_label = tk.Label(root, text="")
+        angle1_label.pack(pady=5)
+        angle2_label = tk.Label(root, text="")
+        angle2_label.pack(pady=5)
+
+        # Start updating GUI
+        update_gui(root, panel, angle1_label, angle2_label)
+
+        root.mainloop()  # Start the mainloop after setting up GUI
+    else:
+        login_status_label.config(text="Invalid username or password", fg="red")
+
+
+# Initialize Tkinter window for login
+login_window = tk.Tk()
+login_window.title("Login")
+
+# Username label and entry
+username_label = tk.Label(login_window, text="Username:")
+username_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+username_entry = tk.Entry(login_window)
+username_entry.grid(row=0, column=1, padx=5, pady=5)
+
+# Password label and entry
+password_label = tk.Label(login_window,text="Password:")
+password_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+password_entry = tk.Entry(login_window, show="*")
+password_entry.grid(row=1, column=1, padx=5, pady=5)
+
+# Login button
+login_button = tk.Button(login_window, text="Login", command=login)
+login_button.grid(row=2, columnspan=2, padx=5, pady=5)
+
+# Login status label
+login_status_label = tk.Label(login_window, text="")
+login_status_label.grid(row=3, columnspan=2)
+
+# Run the Tkinter login window
+login_window.mainloop()
+

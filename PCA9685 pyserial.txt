@@ -1,0 +1,58 @@
+#Cpp to be uploaded in in arduino
+
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+void setup() {
+  Serial.begin(9600);
+  pwm.begin();
+  pwm.setPWMFreq(60);  // Set PWM frequency to 60Hz
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Read the incoming command
+    String command = Serial.readStringUntil('\n');
+    int servoNumber, angle;
+    sscanf(command.c_str(), "%d %d", &servoNumber, &angle);
+    setServoAngle(servoNumber, angle);
+  }
+}
+
+void setServoAngle(int servoNumber, int angle) {
+  // Map angle (0-180 degrees) to pulse width (150-600)
+  int pulseWidth = map(angle, 0, 180, 150, 600);
+  // Set the pulse width for the specified servo
+  pwm.setPWM(servoNumber, 0, pulseWidth);
+}
+
+-------------------------------------------------------------------------------------------------
+#python
+
+import serial
+import time
+
+# Open serial port (replace 'COM3' with the appropriate port on your system)
+ser = serial.Serial('COM5', 9600, timeout=1)
+
+def send_command(servo_num, angle):
+    command = f"{servo_num} {angle}\n"
+    ser.write(command.encode())
+    print(f"Sent command: {command}")
+
+try:
+    while True:
+        servo_num = int(input("Enter servo number (0-15): "))
+        angle = int(input("Enter angle (0-180): "))
+        if 0 <= servo_num <= 15 and 0 <= angle <= 180:
+            send_command(servo_num, angle)
+        else:
+            print("Invalid input. Servo number must be between 0 and 15, angle must be between 0 and 180.")
+        time.sleep(0.1)  # Delay for stability
+except KeyboardInterrupt:
+    ser.close()
+    print("\nSerial port closed.")
+
+
