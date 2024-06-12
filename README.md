@@ -24,6 +24,15 @@ Our system accommodates diverse video feed sources, with options ranging from in
 
 In essence, our project epitomizes a harmonious fusion of advanced technologies, fostering seamless interaction, robust security, and unparalleled versatility in industrial applications.
 
+## Demo Video
+
+### Google Drive Video
+<video width="600" controls>
+  <source src="https://drive.google.com/uc?export=download&id=1RlKry-DhRlVcX6SzQJvScoX8tgI-M1hE" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
 ![image](https://github.com/clenser/RoboVision/assets/100501976/30ff4759-483a-4c03-a0dc-e0dc4c35c9a4)
 
 
